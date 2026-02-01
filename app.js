@@ -1,12 +1,18 @@
+// =======================
+// CONFIG
+// =======================
 const API_KEY = "d0ede01d19277140ae5f70cb47ed245b";
-const MAX_DEPTH = 4;
+const MAX_DEPTH = 6; // allow more hops
 
+// caches to avoid duplicate API calls
 const actorMovieCache = new Map();
 const movieCastCache = new Map();
 const actorIdCache = new Map();
 const movieIdCache = new Map();
 
+// =======================
 // TMDB API helpers
+// =======================
 async function searchActor(name) {
   const url = `https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(name)}`;
   const res = await fetch(url);
@@ -48,16 +54,22 @@ async function getMovieById(id) {
   return data;
 }
 
+// =======================
 // BFS search for connection
+// =======================
 async function findConnection(actorAId, actorBId) {
   const queue = [[{ actorId: actorAId, viaMovieId: null }]];
-  const visited = new Set([actorAId]);
+  const visited = new Set();
 
   while (queue.length) {
     const path = queue.shift();
     const currentNode = path[path.length - 1];
     const currentActorId = currentNode.actorId;
 
+    if (visited.has(currentActorId)) continue;
+    visited.add(currentActorId);
+
+    // Depth limit
     if (path.length > MAX_DEPTH) continue;
 
     const movies = await getMovies(currentActorId);
@@ -66,8 +78,7 @@ async function findConnection(actorAId, actorBId) {
       const cast = await getCast(movie.id);
 
       for (let coActor of cast) {
-        if (visited.has(coActor.id)) continue;
-        visited.add(coActor.id);
+        if (coActor.id === currentActorId) continue;
 
         const newPath = [...path, { actorId: coActor.id, viaMovieId: movie.id }];
         if (coActor.id === actorBId) return newPath;
@@ -76,10 +87,12 @@ async function findConnection(actorAId, actorBId) {
       }
     }
   }
-  return null;
+  return null; // no path found
 }
 
+// =======================
 // format path with clickable links
+// =======================
 async function formatPath(path) {
   if (!path || path.length < 2) return "No connection found.";
 
@@ -101,7 +114,9 @@ async function formatPath(path) {
   return output;
 }
 
+// =======================
 // main connect function
+// =======================
 async function connect() {
   const aName = actorA.value.trim();
   const bName = actorB.value.trim();
@@ -120,7 +135,7 @@ async function connect() {
     return;
   }
 
-  outDiv.innerHTML = "Searching for connection... (may take a few seconds)";
+  outDiv.innerHTML = "Searching for connection... (this may take up to 10–15 seconds)";
 
   const path = await findConnection(actorAData.id, actorBData.id);
   const formatted = await formatPath(path);
