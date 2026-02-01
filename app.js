@@ -15,12 +15,13 @@ async function connect() {
   const b = await searchActor(bName)
 
   const movies = await getMovies(a.id)
-  output.textContent = movies.slice(0,5).map(m => m.title).join("\n")
-
 
   output.textContent = `
 A: ${a.name} (id ${a.id})
 B: ${b.name} (id ${b.id})
+
+First 5 movies of ${a.name}:
+${movies.slice(0,5).map(m => m.title).join("\n")}
 `
 }
 
