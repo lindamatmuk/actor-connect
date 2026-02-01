@@ -14,8 +14,20 @@ async function connect() {
   const a = await searchActor(aName)
   const b = await searchActor(bName)
 
+  const movies = await getMovies(a.id)
+  output.textContent = movies.slice(0,5).map(m => m.title).join("\n")
+
+
   output.textContent = `
 A: ${a.name} (id ${a.id})
 B: ${b.name} (id ${b.id})
 `
 }
+
+async function getMovies(actorId) {
+  const url = `https://api.themoviedb.org/3/person/${actorId}/movie_credits?api_key=${API_KEY}`
+  const res = await fetch(url)
+  const data = await res.json()
+  return data.cast
+}
+
